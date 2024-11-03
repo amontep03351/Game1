@@ -65,29 +65,37 @@ function handleCellClick(event) {
 
 // ฟังก์ชันย้ายหมาก
 function movePiece(fromRow, fromCol, toRow, toCol) {
-    // ตรวจสอบให้แน่ใจว่าตำแหน่งเป้าหมายว่างและการย้ายถูกต้อง
-    const isCapture = checkForCapture(fromRow, fromCol, toRow, toCol);
-    if ((board[toRow][toCol] === null && isValidMove(fromRow, fromCol, toRow, toCol)) || isCapture) {
-        const capturedPiece = isCapture ? board[(fromRow + toRow) / 2][(fromCol + toCol) / 2] : null;
+    // ตรวจสอบการจับหมาก
+    const capturedPiece = checkForCapture(fromRow, fromCol, toRow, toCol);
+    if (capturedPiece) {
+        // ย้ายหมากไปยังตำแหน่งใหม่และลบหมากที่ถูกจับ
         board[toRow][toCol] = board[fromRow][fromCol];
         board[fromRow][fromCol] = null;
-
-        if (isCapture) {
-            // เอาหมากที่ถูกจับออกจากกระดาน
-            board[(fromRow + toRow) / 2][(fromCol + toCol) / 2] = null;
-        }
-
-        return capturedPiece; // คืนค่าหมากที่ถูกจับ
+        board[capturedPiece.row][capturedPiece.col] = null; // เอาหมากที่ถูกจับออก
+        return true; // จับหมากสำเร็จ
+    } else if (isValidMove(fromRow, fromCol, toRow, toCol) && board[toRow][toCol] === null) {
+        // ย้ายหมากไปยังตำแหน่งที่ว่าง
+        board[toRow][toCol] = board[fromRow][fromCol];
+        board[fromRow][fromCol] = null;
+        return false; // ไม่ได้จับหมาก
     }
-    return null; // ไม่มีหมากถูกจับ
+    return null; // การย้ายไม่ถูกต้อง
 }
 
 // ฟังก์ชันตรวจสอบการจับหมาก
 function checkForCapture(fromRow, fromCol, toRow, toCol) {
     const rowDiff = Math.abs(fromRow - toRow);
     const colDiff = Math.abs(fromCol - toCol);
-    // ตรวจสอบการเคลื่อนที่สองช่องทแยงมุมเพื่อตรวจสอบการจับ
-    return rowDiff === 2 && colDiff === 2;
+    // ตรวจสอบว่ามีการจับหมาก
+    if (rowDiff === 2 && colDiff === 2) {
+        const midRow = (fromRow + toRow) / 2;
+        const midCol = (fromCol + toCol) / 2;
+        // ตรวจสอบว่ามีหมากของฝ่ายตรงข้ามอยู่ที่ตำแหน่งกลาง
+        if (board[midRow][midCol] === 'ai') {
+            return { row: midRow, col: midCol }; // คืนค่าตำแหน่งหมากที่ถูกจับ
+        }
+    }
+    return null; // ไม่สามารถจับได้
 }
 
 // ฟังก์ชันตรวจสอบว่าการย้ายถูกต้องหรือไม่
@@ -95,7 +103,7 @@ function isValidMove(fromRow, fromCol, toRow, toCol) {
     const rowDiff = Math.abs(fromRow - toRow);
     const colDiff = Math.abs(fromCol - toCol);
     // ตรวจสอบการย้ายหนึ่งช่องในทิศทางทแยงมุม
-    return rowDiff === 1 && colDiff === 1;
+    return rowDiff === 1 && colDiff === 1; // ย้ายปกติ
 }
 
 // ฟังก์ชันให้ AI เคลื่อนที่
@@ -151,3 +159,4 @@ function getPossibleMoves(row, col) {
 
 // เริ่มเกมใหม่เมื่อโหลดหน้า
 startGame();
+
