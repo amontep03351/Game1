@@ -1,48 +1,60 @@
 * {
     box-sizing: border-box;
-    margin: 0;
-    padding: 0;
 }
+
 body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    background-color: #f4f4f9;
-    font-family: Arial, sans-serif;
+    height: 100vh;
+    margin: 0;
 }
-.game-container {
+
+.container {
     text-align: center;
 }
-#game-board {
+
+.board {
     display: grid;
-    grid-template-columns: repeat(8, 50px);
-    grid-template-rows: repeat(8, 50px);
-    gap: 2px;
-    margin-top: 20px;
+    grid-template-columns: repeat(8, 1fr);
+    width: 400px;
+    height: 400px;
+    margin: 20px auto;
+    border: 2px solid #333;
 }
+
 .cell {
     width: 50px;
     height: 50px;
+    background-color: #fff;
+    border: 1px solid #ddd;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 1.5rem;
+    cursor: pointer;
 }
-.black-cell {
-    background-color: #333;
+
+.cell.dark {
+    background-color: #666;
 }
-.white-cell {
-    background-color: #fff;
-}
+
 .piece {
     width: 40px;
     height: 40px;
     border-radius: 50%;
 }
-.piece.player {
+
+.red {
     background-color: red;
 }
-.piece.ai {
-    background-color: blue;
+
+.black {
+    background-color: black;
+}
+
+.message {
+    margin-top: 20px;
+    font-size: 20px;
 }
