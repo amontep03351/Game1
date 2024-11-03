@@ -1,162 +1,143 @@
-let board, selectedPiece;
+const board = [
+    [null, 'ai', null, 'ai', null, 'ai', null, 'ai'],
+    ['ai', null, 'ai', null, 'ai', null, 'ai', null],
+    [null, 'ai', null, 'ai', null, 'ai', null, 'ai'],
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    ['player', null, 'player', null, 'player', null, 'player', null],
+    [null, 'player', null, 'player', null, 'player', null, 'player'],
+    ['player', null, 'player', null, 'player', null, 'player', null],
+];
 
-// ฟังก์ชันสำหรับเริ่มเกมใหม่
-function startGame() {
-    board = [
-        [null, 'ai', null, 'ai', null, 'ai', null, 'ai'],
-        ['ai', null, 'ai', null, 'ai', null, 'ai', null],
-        [null, 'ai', null, 'ai', null, 'ai', null, 'ai'],
-        [null, null, null, null, null, null, null, null],
-        [null, null, null, null, null, null, null, null],
-        ['player', null, 'player', null, 'player', null, 'player', null],
-        [null, 'player', null, 'player', null, 'player', null, 'player'],
-        ['player', null, 'player', null, 'player', null, 'player', null]
-    ];
-    selectedPiece = null;
-    displayBoard(); // แสดงกระดานใหม่
-}
+let currentPlayer = 'player'; // ผู้เล่นเริ่มเกมเป็น 'player'
 
-// ฟังก์ชันแสดงกระดาน
-function displayBoard() {
-    const gameBoard = document.getElementById("game-board");
-    gameBoard.innerHTML = '';
-    board.forEach((row, rowIndex) => {
-        row.forEach((cell, colIndex) => {
-            const cellDiv = document.createElement("div");
-            cellDiv.className = (rowIndex + colIndex) % 2 === 0 ? "cell white-cell" : "cell black-cell";
-            cellDiv.dataset.row = rowIndex;
-            cellDiv.dataset.col = colIndex;
+// ตรวจสอบการเคลื่อนที่ที่ถูกต้องตามกฎ
+function isValidMove(fromRow, fromCol, toRow, toCol) {
+    const rowDiff = toRow - fromRow; // ตรวจสอบการเคลื่อนที่ในแถว
+    const colDiff = toCol - fromCol; // ตรวจสอบการเคลื่อนที่ในคอลัมน์
+    const isForwardMove = (board[fromRow][fromCol] === 'player' && rowDiff === 1) || 
+                          (board[fromRow][fromCol] === 'ai' && rowDiff === -1);
 
-            // เพิ่ม event listener ให้เซลล์แต่ละอัน
-            cellDiv.addEventListener("click", handleCellClick);
-
-            if (cell) {
-                const piece = document.createElement("div");
-                piece.className = `piece ${cell}`;
-                cellDiv.appendChild(piece);
-            }
-            gameBoard.appendChild(cellDiv);
-        });
-    });
-}
-
-// ฟังก์ชันจัดการการคลิกเซลล์
-function handleCellClick(event) {
-    const row = parseInt(event.currentTarget.dataset.row);
-    const col = parseInt(event.currentTarget.dataset.col);
-
-    if (selectedPiece) {
-        // หากเลือกหมากแล้ว ให้ย้ายหมากไปตำแหน่งใหม่
-        const capturedPiece = movePiece(selectedPiece.row, selectedPiece.col, row, col);
-        selectedPiece = null;
-        displayBoard(); // รีเฟรชกระดานหลังย้ายหมาก
-
-        // ให้ AI เคลื่อนที่หลังจากผู้เล่น
-        setTimeout(aiMove, 500); // ให้เวลา 500ms ก่อนที่ AI จะเคลื่อนที่
-
-        if (capturedPiece) {
-            console.log(`Captured: ${capturedPiece}`);
-        }
-    } else if (board[row][col] === 'player') {
-        // เลือกหมากของผู้เล่นเพื่อเตรียมย้าย
-        selectedPiece = { row, col };
+    // ตรวจสอบการเคลื่อนที่แบบปกติ (1 ช่อง)
+    if (Math.abs(rowDiff) === 1 && Math.abs(colDiff) === 1 && board[toRow][toCol] === null) {
+        return true; // ย้ายปกติ
     }
-}
 
-// ฟังก์ชันย้ายหมาก
-function movePiece(fromRow, fromCol, toRow, toCol) {
-    // ตรวจสอบการจับหมาก
-    const capturedPiece = checkForCapture(fromRow, fromCol, toRow, toCol);
-    if (capturedPiece) {
-        // ย้ายหมากไปยังตำแหน่งใหม่และลบหมากที่ถูกจับ
-        board[toRow][toCol] = board[fromRow][fromCol];
-        board[fromRow][fromCol] = null;
-        board[capturedPiece.row][capturedPiece.col] = null; // เอาหมากที่ถูกจับออก
-        return true; // จับหมากสำเร็จ
-    } else if (isValidMove(fromRow, fromCol, toRow, toCol) && board[toRow][toCol] === null) {
-        // ย้ายหมากไปยังตำแหน่งที่ว่าง
-        board[toRow][toCol] = board[fromRow][fromCol];
-        board[fromRow][fromCol] = null;
-        return false; // ไม่ได้จับหมาก
-    }
-    return null; // การย้ายไม่ถูกต้อง
-}
-
-// ฟังก์ชันตรวจสอบการจับหมาก
-function checkForCapture(fromRow, fromCol, toRow, toCol) {
-    const rowDiff = Math.abs(fromRow - toRow);
-    const colDiff = Math.abs(fromCol - toCol);
-    // ตรวจสอบว่ามีการจับหมาก
-    if (rowDiff === 2 && colDiff === 2) {
+    // ตรวจสอบการจับหมาก (2 ช่อง)
+    if (Math.abs(rowDiff) === 2 && Math.abs(colDiff) === 2) {
         const midRow = (fromRow + toRow) / 2;
         const midCol = (fromCol + toCol) / 2;
-        // ตรวจสอบว่ามีหมากของฝ่ายตรงข้ามอยู่ที่ตำแหน่งกลาง
-        if (board[midRow][midCol] === 'ai') {
-            return { row: midRow, col: midCol }; // คืนค่าตำแหน่งหมากที่ถูกจับ
+        // ตรวจสอบว่ามีหมากฝ่ายตรงข้ามอยู่ที่ตำแหน่งกลาง
+        if (board[midRow][midCol] && board[midRow][midCol] !== board[fromRow][fromCol]) {
+            return true; // จับหมาก
         }
     }
-    return null; // ไม่สามารถจับได้
+
+    return false; // การย้ายไม่ถูกต้อง
 }
 
-// ฟังก์ชันตรวจสอบว่าการย้ายถูกต้องหรือไม่
-function isValidMove(fromRow, fromCol, toRow, toCol) {
-    const rowDiff = Math.abs(fromRow - toRow);
-    const colDiff = Math.abs(fromCol - toCol);
-    // ตรวจสอบการย้ายหนึ่งช่องในทิศทางทแยงมุม
-    return rowDiff === 1 && colDiff === 1; // ย้ายปกติ
+// ทำการย้าย
+function makeMove(from, to) {
+    const [fromRow, fromCol] = from;
+    const [toRow, toCol] = to;
+
+    // ทำการย้าย
+    board[toRow][toCol] = board[fromRow][fromCol];
+    board[fromRow][fromCol] = null;
+
+    // ตรวจสอบว่ามีการจับหมากหรือไม่
+    const rowDiff = toRow - fromRow;
+    const colDiff = toCol - fromCol;
+
+    if (Math.abs(rowDiff) === 2 && Math.abs(colDiff) === 2) {
+        const midRow = (fromRow + toRow) / 2;
+        const midCol = (fromCol + toCol) / 2;
+        board[midRow][midCol] = null; // ลบหมากที่ถูกจับ
+    }
 }
 
-// ฟังก์ชันให้ AI เคลื่อนที่
+// ฟังก์ชันที่ให้ AI ทำการเคลื่อนที่
 function aiMove() {
-    // หาหมาก AI ที่สามารถเคลื่อนที่ได้
+    const possibleMoves = getPossibleMoves('ai');
+    
+    // หาก AI ไม่มีการเคลื่อนที่ที่เป็นไปได้
+    if (possibleMoves.length === 0) {
+        return;
+    }
+
+    // เลือกการเคลื่อนที่แบบสุ่ม
+    const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+    makeMove(move.from, move.to);
+    currentPlayer = 'player'; // เปลี่ยนเป็นผู้เล่น
+}
+
+// คืนค่าการเคลื่อนที่ทั้งหมดที่เป็นไปได้สำหรับผู้เล่นที่กำหนด
+function getPossibleMoves(player) {
+    const moves = [];
+    
+    // วนลูปผ่านกระดานเพื่อค้นหาหมากของผู้เล่น
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
-            if (board[row][col] === 'ai') {
-                // ตรวจสอบตำแหน่งที่สามารถย้ายได้
-                const possibleMoves = getPossibleMoves(row, col);
-                if (possibleMoves.length > 0) {
-                    // เลือกการย้ายแบบสุ่มจากการย้ายที่เป็นไปได้
-                    const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-                    movePiece(row, col, move.row, move.col);
-                    displayBoard();
-                    return; // ทำการย้ายและหยุดที่นี่
-                }
+            if (board[row][col] === player) {
+                // ตรวจสอบการเคลื่อนที่ที่เป็นไปได้
+                checkValidMoves(row, col, moves);
             }
         }
     }
+    
+    return moves;
 }
 
-// ฟังก์ชันหาการเคลื่อนที่ที่เป็นไปได้สำหรับ AI
-function getPossibleMoves(row, col) {
-    const possibleMoves = [];
-    const directions = [
-        { row: 1, col: -1 },
-        { row: 1, col: 1 }
-    ];
+// ตรวจสอบการเคลื่อนที่ที่ถูกต้อง (ทั้งการเคลื่อนที่ปกติและการจับหมาก)
+function checkValidMoves(row, col, moves) {
+    // ตรวจสอบการเคลื่อนที่ปกติ (1 ช่อง)
+    const directions = [[1, 1], [1, -1], [-1, 1], [-1, -1]]; // ทิศทางที่อนุญาต
+    for (let [dRow, dCol] of directions) {
+        const newRow = row + dRow;
+        const newCol = col + dCol;
 
-    directions.forEach(dir => {
-        const newRow = row + dir.row;
-        const newCol = col + dir.col;
-
-        // ตรวจสอบให้แน่ใจว่าตำแหน่งใหม่ภายในขอบเขตและว่าง
-        if (newRow < 8 && newCol >= 0 && newCol < 8 && board[newRow][newCol] === null) {
-            possibleMoves.push({ row: newRow, col: newCol });
+        // ตรวจสอบว่าตำแหน่งใหม่ว่างอยู่หรือไม่
+        if (isWithinBounds(newRow, newCol) && board[newRow][newCol] === null) {
+            moves.push({ from: [row, col], to: [newRow, newCol] });
         }
 
         // ตรวจสอบการจับหมาก
-        const captureRow = newRow + dir.row;
-        const captureCol = newCol + dir.col;
+        const jumpRow = row + 2 * dRow;
+        const jumpCol = col + 2 * dCol;
 
-        if (captureRow < 8 && captureCol >= 0 && captureCol < 8 && board[captureRow][captureCol] === 'player') {
-            if (board[newRow][newCol] === null) {
-                possibleMoves.push({ row: captureRow, col: captureCol }); // เพิ่มการจับหมาก
+        if (isWithinBounds(jumpRow, jumpCol) && board[jumpRow][jumpCol] === null) {
+            // ตรวจสอบว่ามีหมากฝ่ายตรงข้ามอยู่ที่ตำแหน่งกลาง
+            const midRow = row + dRow;
+            const midCol = col + dCol;
+
+            if (isWithinBounds(midRow, midCol) && board[midRow][midCol] && board[midRow][midCol] !== player) {
+                moves.push({ from: [row, col], to: [jumpRow, jumpCol] });
             }
         }
-    });
-
-    return possibleMoves;
+    }
 }
 
-// เริ่มเกมใหม่เมื่อโหลดหน้า
-startGame();
+// ตรวจสอบว่าตำแหน่งอยู่ในขอบเขตของกระดาน 8x8 หรือไม่
+function isWithinBounds(row, col) {
+    return row >= 0 && row < 8 && col >= 0 && col < 8;
+}
 
+// ฟังก์ชันเริ่มเกมที่กำหนดค่าต่างๆ
+function startGame() {
+    // เริ่มต้นกระดานหมากฮอส
+    console.log("เริ่มเกมหมากฮอส");
+    renderBoard(); // ฟังก์ชันที่ใช้แสดงกระดาน
+
+    // เริ่มเกมโดยให้ AI เคลื่อนที่ก่อน
+    aiMove();
+}
+
+// ฟังก์ชันแสดงกระดานหมากฮอส
+function renderBoard() {
+    // การแสดงผลกระดานใน console หรือ UI
+    console.clear();
+    console.table(board);
+}
+
+// เรียกใช้ startGame เพื่อเริ่มเกม
+startGame();
