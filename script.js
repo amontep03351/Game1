@@ -30,7 +30,9 @@ function drawBoard() {
                 cellElement.innerHTML = '<div class="piece ai"></div>';
             }
 
-            cellElement.onclick = () => handleCellClick(row, col);
+            // เพิ่มการจัดการสัมผัส
+            cellElement.addEventListener('touchstart', () => handleCellClick(row, col));
+            cellElement.addEventListener('click', () => handleCellClick(row, col)); // รองรับการคลิกด้วยเมาส์ด้วย
             rowElement.appendChild(cellElement);
         }
         boardElement.appendChild(rowElement);
@@ -96,19 +98,16 @@ function checkGameOver() {
 }
 
 function aiMove() {
-    // AI ควรเลือกการเคลื่อนที่ (กรุณาปรับปรุง AI ที่นี่)
     let possibleMoves = [];
     for (let row = 0; row < board.length; row++) {
         for (let col = 0; col < board[row].length; col++) {
             if (board[row][col] === 'ai') {
-                // ตรวจสอบการเคลื่อนที่ที่ถูกต้อง
                 const moves = getValidAiMoves(row, col);
                 possibleMoves.push(...moves);
             }
         }
     }
 
-    // เลือกการเคลื่อนที่แบบสุ่ม
     if (possibleMoves.length > 0) {
         const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
         makeMove(move.from, move.to);
@@ -123,7 +122,6 @@ function aiMove() {
 
 function getValidAiMoves(row, col) {
     const moves = [];
-    // เพิ่มการตรวจสอบการเคลื่อนที่ที่ถูกต้องที่นี่
     const directions = [[1, 1], [1, -1], [2, 2], [2, -2]]; // ตัวอย่างการเคลื่อนที่ของ AI
 
     directions.forEach(([dRow, dCol]) => {
@@ -143,4 +141,3 @@ function startGame() {
 }
 
 document.addEventListener("DOMContentLoaded", startGame);
-
