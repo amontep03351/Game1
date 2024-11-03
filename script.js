@@ -1,143 +1,158 @@
-const board = [
-    ['ai', null, 'ai', null, 'ai', null, 'ai', null],
-    [null, 'ai', null, 'ai', null, 'ai', null, 'ai'],
-    ['ai', null, 'ai', null, 'ai', null, 'ai', null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    ['player', null, 'player', null, 'player', null, 'player', null],
-    [null, 'player', null, 'player', null, 'player', null, 'player'],
-    ['player', null, 'player', null, 'player', null, 'player', null],
-];
+const boardElement = document.getElementById('board');
+const levelSelect = document.getElementById('level');
+const messageElement = document.getElementById('message');
 
-let currentPlayer = 'player'; // ผู้เล่นเริ่มต้น
-let selectedPiece = null; // หมายเลขหมากที่เลือก
+let board = [];
+let currentPlayer = 'red';
+let selectedPiece = null;
 
-function drawBoard() {
-    const boardElement = document.getElementById('board');
-    boardElement.innerHTML = ''; // ล้างกระดานเก่า
+function createBoard() {
+    board = Array(8).fill(null).map((_, rowIndex) => (
+        Array(8).fill(null).map((_, colIndex) => {
+            if (rowIndex < 3 && (rowIndex + colIndex) % 2 !== 0) return 'black';
+            if (rowIndex > 4 && (rowIndex + colIndex) % 2 !== 0) return 'red';
+            return null;
+        })
+    ));
+    renderBoard();
+}
 
-    for (let row = 0; row < board.length; row++) {
-        const rowElement = document.createElement('div');
-        rowElement.className = 'row';
-
-        for (let col = 0; col < board[row].length; col++) {
-            const cellElement = document.createElement('div');
-            cellElement.className = 'cell';
-
-            if (board[row][col] === 'player') {
-                cellElement.innerHTML = '<div class="piece player"></div>';
-            } else if (board[row][col] === 'ai') {
-                cellElement.innerHTML = '<div class="piece ai"></div>';
+function renderBoard() {
+    boardElement.innerHTML = '';
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            if ((row + col) % 2 !== 0) {
+                cell.classList.add('dark');
+                if (board[row][col]) {
+                    const piece = document.createElement('div');
+                    piece.classList.add('piece', board[row][col]);
+                    piece.setAttribute('data-row', row);
+                    piece.setAttribute('data-col', col);
+                    piece.addEventListener('click', () => selectPiece(row, col));
+                    cell.appendChild(piece);
+                }
             }
-
-            // เพิ่มการจัดการสัมผัส
-            cellElement.addEventListener('touchstart', () => handleCellClick(row, col));
-            cellElement.addEventListener('click', () => handleCellClick(row, col)); // รองรับการคลิกด้วยเมาส์ด้วย
-            rowElement.appendChild(cellElement);
+            boardElement.appendChild(cell);
         }
-        boardElement.appendChild(rowElement);
     }
 }
 
-function handleCellClick(row, col) {
-    if (currentPlayer === 'player') {
-        if (selectedPiece) {
-            const [fromRow, fromCol] = selectedPiece;
-            if (isValidMove(fromRow, fromCol, row, col)) {
-                makeMove(selectedPiece, [row, col]);
-                if (checkGameOver()) {
-                    alert(`${currentPlayer} ชนะ!`);
-                    return;
-                }
-                currentPlayer = 'ai'; // เปลี่ยนไปให้ AI เล่น
+function selectPiece(row, col) {
+    if (board[row][col] === currentPlayer) {
+        selectedPiece = { row, col };
+    } else if (selectedPiece) {
+        if (isValidMove(selectedPiece.row, selectedPiece.col, row, col)) {
+            movePiece(selectedPiece.row, selectedPiece.col, row, col);
+            if (currentPlayer === 'red') {
+                currentPlayer = 'black';
                 aiMove();
             } else {
-                console.log("การย้ายไม่ถูกต้อง");
+                currentPlayer = 'red';
             }
-            selectedPiece = null; // รีเซ็ตการเลือก
-        } else if (board[row][col] === 'player') {
-            selectedPiece = [row, col]; // เลือกหมากของผู้เล่น
         }
+        selectedPiece = null;
     }
-    drawBoard(); // วาดกระดานใหม่
 }
 
 function isValidMove(fromRow, fromCol, toRow, toCol) {
-    const piece = board[fromRow][fromCol];
-
-    // ตรวจสอบว่าเคลื่อนที่ในแนวทแยง
-    if (Math.abs(toRow - fromRow) === 1 && Math.abs(toCol - fromCol) === 1 && board[toRow][toCol] === null) {
-        return true; // เคลื่อนที่ปกติ
+    const direction = currentPlayer === 'red' ? 1 : -1;
+    if (toRow === fromRow + direction && (toCol === fromCol - 1 || toCol === fromCol + 1) && !board[toRow][toCol]) {
+        return true;
     }
-
-    // ตรวจสอบการกินหมาก
-    if (Math.abs(toRow - fromRow) === 2 && Math.abs(toCol - fromCol) === 2) {
-        const middleRow = (fromRow + toRow) / 2;
-        const middleCol = (fromCol + toCol) / 2;
-
-        if (board[middleRow][middleCol] === 'ai') {
-            board[middleRow][middleCol] = null; // กินหมาก AI
-            return true; // เคลื่อนที่พร้อมกินหมาก
+    if (toRow === fromRow + 2 * direction && (toCol === fromCol - 2 || toCol === fromCol + 2)) {
+        const jumpedRow = fromRow + direction;
+        const jumpedCol = fromCol + (toCol < fromCol ? -1 : 1);
+        if (board[jumpedRow][jumpedCol] && board[jumpedRow][jumpedCol] !== currentPlayer) {
+            return true;
         }
     }
-    return false; // ไม่ถูกต้อง
+    return false;
 }
 
-function makeMove(from, to) {
-    const [fromRow, fromCol] = from;
-    const [toRow, toCol] = to;
-    
-    board[toRow][toCol] = board[fromRow][fromCol]; // ย้ายหมาก
-    board[fromRow][fromCol] = null; // เคลียร์ตำแหน่งเดิม
-}
+function movePiece(fromRow, fromCol, toRow, toCol) {
+    board[toRow][toCol] = currentPlayer;
+    board[fromRow][fromCol] = null;
 
-function checkGameOver() {
-    const playerHasPieces = board.flat().includes('player');
-    const aiHasPieces = board.flat().includes('ai');
-    return !playerHasPieces || !aiHasPieces; // ถ้าไม่มีหมากจะจบเกม
+    // Handle jumping
+    if (Math.abs(toRow - fromRow) === 2) {
+        const jumpedRow = (fromRow + toRow) / 2;
+        const jumpedCol = (fromCol + toCol) / 2;
+        board[jumpedRow][jumpedCol] = null;
+    }
+
+    renderBoard();
+    checkForWin();
 }
 
 function aiMove() {
-    let possibleMoves = [];
-    for (let row = 0; row < board.length; row++) {
-        for (let col = 0; col < board[row].length; col++) {
-            if (board[row][col] === 'ai') {
-                const moves = getValidAiMoves(row, col);
-                possibleMoves.push(...moves);
+    let possibleMoves = getPossibleMoves('black');
+    if (possibleMoves.length > 0) {
+        let move;
+        if (levelSelect.value === 'easy') {
+            move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+        } else if (levelSelect.value === 'medium') {
+            move = possibleMoves[0]; // เลือกการเคลื่อนที่แรก
+        } else {
+            move = possibleMoves.sort((a, b) => evaluateMove(b) - evaluateMove(a))[0]; // เลือกการเคลื่อนที่ที่ดีที่สุด
+        }
+        movePiece(move.fromRow, move.fromCol, move.toRow, move.toCol);
+        currentPlayer = 'red';
+    }
+}
+
+function getPossibleMoves(player) {
+    const possibleMoves = [];
+    const playerPieces = board.flatMap((row, rowIndex) => 
+        row.map((piece, colIndex) => piece === player ? { row: rowIndex, col: colIndex } : null).filter(Boolean)
+    );
+
+    for (const piece of playerPieces) {
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                if (isValidMove(piece.row, piece.col, row, col)) {
+                    possibleMoves.push({ fromRow: piece.row, fromCol: piece.col, toRow: row, toCol: col });
+                }
             }
         }
     }
+    return possibleMoves;
+}
 
-    if (possibleMoves.length > 0) {
-        const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-        makeMove(move.from, move.to);
-        if (checkGameOver()) {
-            alert("AI ชนะ!");
-            return;
+function evaluateMove(move) {
+    // การประเมินค่าการเคลื่อนที่: พิจารณาจำนวนชิ้นส่วนที่จับได้
+    const tempBoard = JSON.parse(JSON.stringify(board));
+    const { fromRow, fromCol, toRow, toCol } = move;
+    const originalPiece = tempBoard[fromRow][fromCol];
+    tempBoard[toRow][toCol] = originalPiece;
+    tempBoard[fromRow][fromCol] = null;
+
+    let score = 0;
+    if (Math.abs(toRow - fromRow) === 2) {
+        const jumpedRow = (fromRow + toRow) / 2;
+        const jumpedCol = (fromCol + toCol) / 2;
+        if (tempBoard[jumpedRow][jumpedCol] && tempBoard[jumpedRow][jumpedCol] !== originalPiece) {
+            score += 1; // เพิ่มคะแนนสำหรับการจับ
         }
-        currentPlayer = 'player'; // เปลี่ยนกลับให้ผู้เล่นเล่น
     }
-    drawBoard(); // วาดกระดานใหม่
+    return score;
 }
 
-function getValidAiMoves(row, col) {
-    const moves = [];
-    const directions = [[1, 1], [1, -1], [2, 2], [2, -2]]; // ตัวอย่างการเคลื่อนที่ของ AI
+function checkForWin() {
+    const redPieces = board.flat().filter(piece => piece === 'red').length;
+    const blackPieces = board.flat().filter(piece => piece === 'black').length;
 
-    directions.forEach(([dRow, dCol]) => {
-        const toRow = row + dRow;
-        const toCol = col + dCol;
-        if (isValidMove(row, col, toRow, toCol)) {
-            moves.push({ from: [row, col], to: [toRow, toCol] });
-        }
-    });
-
-    return moves;
+    if (redPieces === 0) {
+        messageElement.innerText = 'แบล็คชนะ!';
+        setTimeout(createBoard, 2000);
+    } else if (blackPieces === 0) {
+        messageElement.innerText = 'เรดชนะ!';
+        setTimeout(createBoard, 2000);
+    } else {
+        messageElement.innerText = `ตาของ: ${currentPlayer}`;
+    }
 }
 
-// เริ่มต้นเกม
-function startGame() {
-    drawBoard();
-}
-
-document.addEventListener("DOMContentLoaded", startGame);
+levelSelect.addEventListener('change', createBoard);
+createBoard();
