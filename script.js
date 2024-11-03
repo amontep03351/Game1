@@ -1,48 +1,22 @@
-// Variables to hold game state
-let board = [];
-const BOARD_SIZE = 8;
-let aiMove = easyAiMove; // Default AI function
+let board, selectedPiece;
 
-// Start the game
+// ฟังก์ชันสำหรับเริ่มเกมใหม่
 function startGame() {
-    const difficulty = document.getElementById("difficulty").value;
-    initializeBoard();
-    displayBoard();
-    // Set AI difficulty
-    switch (difficulty) {
-        case 'easy':
-            aiMove = easyAiMove;
-            break;
-        case 'medium':
-            aiMove = mediumAiMove;
-            break;
-        case 'hard':
-            aiMove = hardAiMove;
-            break;
-    }
+    board = [
+        [null, 'ai', null, 'ai', null, 'ai', null, 'ai'],
+        ['ai', null, 'ai', null, 'ai', null, 'ai', null],
+        [null, 'ai', null, 'ai', null, 'ai', null, 'ai'],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        ['player', null, 'player', null, 'player', null, 'player', null],
+        [null, 'player', null, 'player', null, 'player', null, 'player'],
+        ['player', null, 'player', null, 'player', null, 'player', null]
+    ];
+    selectedPiece = null;
+    displayBoard(); // แสดงกระดานใหม่
 }
 
-// Initialize the game board
-function initializeBoard() {
-    board = [];
-    for (let row = 0; row < BOARD_SIZE; row++) {
-        const rowArray = [];
-        for (let col = 0; col < BOARD_SIZE; col++) {
-            if ((row + col) % 2 === 0) {
-                rowArray.push(null);
-            } else if (row < 3) {
-                rowArray.push('ai');
-            } else if (row > 4) {
-                rowArray.push('player');
-            } else {
-                rowArray.push(null);
-            }
-        }
-        board.push(rowArray);
-    }
-}
-
-// Display the board on the screen
+// ฟังก์ชันแสดงกระดาน
 function displayBoard() {
     const gameBoard = document.getElementById("game-board");
     gameBoard.innerHTML = '';
@@ -50,6 +24,12 @@ function displayBoard() {
         row.forEach((cell, colIndex) => {
             const cellDiv = document.createElement("div");
             cellDiv.className = (rowIndex + colIndex) % 2 === 0 ? "cell white-cell" : "cell black-cell";
+            cellDiv.dataset.row = rowIndex;
+            cellDiv.dataset.col = colIndex;
+
+            // เพิ่ม event listener ให้เซลล์แต่ละอัน
+            cellDiv.addEventListener("click", handleCellClick);
+
             if (cell) {
                 const piece = document.createElement("div");
                 piece.className = `piece ${cell}`;
@@ -60,75 +40,84 @@ function displayBoard() {
     });
 }
 
-// Basic AI moves based on difficulty
-function easyAiMove() {
-    let possibleMoves = getPossibleMoves('ai');
-    if (possibleMoves.length > 0) {
-        let randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-        makeMove(randomMove);
+// ฟังก์ชันจัดการการคลิกเซลล์
+function handleCellClick(event) {
+    const row = parseInt(event.currentTarget.dataset.row);
+    const col = parseInt(event.currentTarget.dataset.col);
+
+    if (selectedPiece) {
+        // หากเลือกหมากแล้ว ให้ย้ายหมากไปตำแหน่งใหม่
+        movePiece(selectedPiece.row, selectedPiece.col, row, col);
+        selectedPiece = null;
+        displayBoard(); // รีเฟรชกระดานหลังย้ายหมาก
+
+        // ให้ AI เคลื่อนที่หลังจากผู้เล่น
+        setTimeout(aiMove, 500); // ให้เวลา 500ms ก่อนที่ AI จะเคลื่อนที่
+    } else if (board[row][col] === 'player') {
+        // เลือกหมากของผู้เล่นเพื่อเตรียมย้าย
+        selectedPiece = { row, col };
     }
 }
 
-function mediumAiMove() {
-    let bestMove = getBestMove('ai', 2); // look ahead 2 steps
-    if (bestMove) {
-        makeMove(bestMove);
+// ฟังก์ชันย้ายหมาก
+function movePiece(fromRow, fromCol, toRow, toCol) {
+    // ตรวจสอบให้แน่ใจว่าตำแหน่งเป้าหมายว่างและการย้ายถูกต้อง
+    if (board[toRow][toCol] === null && isValidMove(fromRow, fromCol, toRow, toCol)) {
+        board[toRow][toCol] = board[fromRow][fromCol];
+        board[fromRow][fromCol] = null;
     }
 }
 
-function hardAiMove() {
-    let bestMove = minimax(board, 3, true); // 3 steps lookahead
-    if (bestMove) {
-        makeMove(bestMove);
-    }
+// ฟังก์ชันตรวจสอบว่าการย้ายถูกต้องหรือไม่
+function isValidMove(fromRow, fromCol, toRow, toCol) {
+    const rowDiff = Math.abs(fromRow - toRow);
+    const colDiff = Math.abs(fromCol - toCol);
+
+    // ตรวจสอบการย้ายหนึ่งช่องในทิศทางทแยงมุม
+    return rowDiff === 1 && colDiff === 1;
 }
 
-function minimax(board, depth, isMaximizingPlayer) {
-    if (depth === 0 || gameIsOver(board)) {
-        return evaluateBoard(board);
-    }
-
-    if (isMaximizingPlayer) {
-        let maxEval = -Infinity;
-        let bestMove = null;
-        for (let move of getPossibleMoves('ai')) {
-            let evaluation = minimax(makeMove(move, board), depth - 1, false);
-            if (evaluation > maxEval) {
-                maxEval = evaluation;
-                bestMove = move;
+// ฟังก์ชันให้ AI เคลื่อนที่
+function aiMove() {
+    // หาหมาก AI ที่สามารถเคลื่อนที่ได้
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (board[row][col] === 'ai') {
+                // ตรวจสอบตำแหน่งที่สามารถย้ายได้
+                const possibleMoves = getPossibleMoves(row, col);
+                if (possibleMoves.length > 0) {
+                    // เลือกการย้ายแบบสุ่มจากการย้ายที่เป็นไปได้
+                    const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                    movePiece(row, col, move.row, move.col);
+                    displayBoard();
+                    return; // ทำการย้ายและหยุดที่นี่
+                }
             }
         }
-        return bestMove;
-    } else {
-        let minEval = Infinity;
-        let bestMove = null;
-        for (let move of getPossibleMoves('player')) {
-            let evaluation = minimax(makeMove(move, board), depth - 1, true);
-            if (evaluation < minEval) {
-                minEval = evaluation;
-                bestMove = move;
-            }
-        }
-        return bestMove;
     }
 }
 
-// Placeholder functions for moves and board evaluation
-function getPossibleMoves(player) {
-    // Generate and return a list of possible moves for the given player
-    return [];
+// ฟังก์ชันหาการเคลื่อนที่ที่เป็นไปได้สำหรับ AI
+function getPossibleMoves(row, col) {
+    const possibleMoves = [];
+    const directions = [
+        { row: 1, col: -1 },
+        { row: 1, col: 1 }
+    ];
+
+    directions.forEach(dir => {
+        const newRow = row + dir.row;
+        const newCol = col + dir.col;
+
+        // ตรวจสอบให้แน่ใจว่าตำแหน่งใหม่ภายในขอบเขตและว่าง
+        if (newRow < 8 && newCol >= 0 && newCol < 8 && board[newRow][newCol] === null) {
+            possibleMoves.push({ row: newRow, col: newCol });
+        }
+    });
+
+    return possibleMoves;
 }
 
-function makeMove(move) {
-    // Execute the move on the board
-}
+// เริ่มเกมใหม่เมื่อโหลดหน้า
+startGame();
 
-function gameIsOver(board) {
-    // Check if the game is over
-    return false;
-}
-
-function evaluateBoard(board) {
-    // Evaluate the board for the minimax function
-    return 0;
-}
