@@ -1,23 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkers Game</title>
-    <link rel="stylesheet" href="style.css">
+    <title>เกมหมากฮอส</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            margin-top: 20px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            background-color: #eee;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cell:nth-child(odd) {
+            background-color: #ddd;
+        }
+        .piece {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .player {
+            background-color: blue;
+        }
+        .ai {
+            background-color: red;
+        }
+    </style>
 </head>
 <body>
-    <div class="game-container">
-        <h1>Checkers Game</h1>
-        <label for="difficulty">Select Difficulty:</label>
-        <select id="difficulty">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-        </select>
-        <button onclick="startGame()">Start Game</button>
-        <div id="game-board"></div>
-    </div>
-    <script src="script.js"></script>
+    <h1>เกมหมากฮอส</h1>
+    <div id="board"></div>
+    <script src="your_script.js"></script>
 </body>
 </html>
