@@ -47,12 +47,16 @@ function handleCellClick(event) {
 
     if (selectedPiece) {
         // หากเลือกหมากแล้ว ให้ย้ายหมากไปตำแหน่งใหม่
-        movePiece(selectedPiece.row, selectedPiece.col, row, col);
+        const capturedPiece = movePiece(selectedPiece.row, selectedPiece.col, row, col);
         selectedPiece = null;
         displayBoard(); // รีเฟรชกระดานหลังย้ายหมาก
 
         // ให้ AI เคลื่อนที่หลังจากผู้เล่น
         setTimeout(aiMove, 500); // ให้เวลา 500ms ก่อนที่ AI จะเคลื่อนที่
+
+        if (capturedPiece) {
+            console.log(`Captured: ${capturedPiece}`);
+        }
     } else if (board[row][col] === 'player') {
         // เลือกหมากของผู้เล่นเพื่อเตรียมย้าย
         selectedPiece = { row, col };
@@ -62,17 +66,34 @@ function handleCellClick(event) {
 // ฟังก์ชันย้ายหมาก
 function movePiece(fromRow, fromCol, toRow, toCol) {
     // ตรวจสอบให้แน่ใจว่าตำแหน่งเป้าหมายว่างและการย้ายถูกต้อง
-    if (board[toRow][toCol] === null && isValidMove(fromRow, fromCol, toRow, toCol)) {
+    const isCapture = checkForCapture(fromRow, fromCol, toRow, toCol);
+    if ((board[toRow][toCol] === null && isValidMove(fromRow, fromCol, toRow, toCol)) || isCapture) {
+        const capturedPiece = isCapture ? board[(fromRow + toRow) / 2][(fromCol + toCol) / 2] : null;
         board[toRow][toCol] = board[fromRow][fromCol];
         board[fromRow][fromCol] = null;
+
+        if (isCapture) {
+            // เอาหมากที่ถูกจับออกจากกระดาน
+            board[(fromRow + toRow) / 2][(fromCol + toCol) / 2] = null;
+        }
+
+        return capturedPiece; // คืนค่าหมากที่ถูกจับ
     }
+    return null; // ไม่มีหมากถูกจับ
+}
+
+// ฟังก์ชันตรวจสอบการจับหมาก
+function checkForCapture(fromRow, fromCol, toRow, toCol) {
+    const rowDiff = Math.abs(fromRow - toRow);
+    const colDiff = Math.abs(fromCol - toCol);
+    // ตรวจสอบการเคลื่อนที่สองช่องทแยงมุมเพื่อตรวจสอบการจับ
+    return rowDiff === 2 && colDiff === 2;
 }
 
 // ฟังก์ชันตรวจสอบว่าการย้ายถูกต้องหรือไม่
 function isValidMove(fromRow, fromCol, toRow, toCol) {
     const rowDiff = Math.abs(fromRow - toRow);
     const colDiff = Math.abs(fromCol - toCol);
-
     // ตรวจสอบการย้ายหนึ่งช่องในทิศทางทแยงมุม
     return rowDiff === 1 && colDiff === 1;
 }
@@ -113,6 +134,16 @@ function getPossibleMoves(row, col) {
         if (newRow < 8 && newCol >= 0 && newCol < 8 && board[newRow][newCol] === null) {
             possibleMoves.push({ row: newRow, col: newCol });
         }
+
+        // ตรวจสอบการจับหมาก
+        const captureRow = newRow + dir.row;
+        const captureCol = newCol + dir.col;
+
+        if (captureRow < 8 && captureCol >= 0 && captureCol < 8 && board[captureRow][captureCol] === 'player') {
+            if (board[newRow][newCol] === null) {
+                possibleMoves.push({ row: captureRow, col: captureCol }); // เพิ่มการจับหมาก
+            }
+        }
     });
 
     return possibleMoves;
@@ -120,4 +151,3 @@ function getPossibleMoves(row, col) {
 
 // เริ่มเกมใหม่เมื่อโหลดหน้า
 startGame();
-
