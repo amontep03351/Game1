@@ -143,3 +143,4 @@ function startGame() {
 }
 
 document.addEventListener("DOMContentLoaded", startGame);
+
