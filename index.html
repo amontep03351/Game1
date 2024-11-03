@@ -4,47 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เกมหมากฮอส</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        #board {
-            display: grid;
-            grid-template-columns: repeat(8, 50px);
-            grid-template-rows: repeat(8, 50px);
-            margin-top: 20px;
-        }
-        .cell {
-            width: 50px;
-            height: 50px;
-            background-color: #eee;
-            border: 1px solid #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .cell:nth-child(odd) {
-            background-color: #ddd;
-        }
-        .piece {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-        }
-        .player {
-            background-color: blue;
-        }
-        .ai {
-            background-color: red;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>เกมหมากฮอส</h1>
-    <div id="board"></div>
+    <div class="container">
+        <h1>เกมหมากฮอส</h1>
+        <div class="difficulty">
+            <label for="level">เลือกระดับความยาก:</label>
+            <select id="level">
+                <option value="easy">ง่าย</option>
+                <option value="medium">ปานกลาง</option>
+                <option value="hard">ยาก</option>
+            </select>
+        </div>
+        <div id="board" class="board"></div>
+        <div id="message" class="message"></div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
